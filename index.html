@@ -100,7 +100,7 @@ input[type=color]{width:100%;height:34px;margin-top:4px;border:1px solid var(--l
 <body>
 <header>
   <div class="logo">★</div>
-  <div><h1>Card Forge <small style="font:600 12px system-ui;color:var(--mute);letter-spacing:0;text-transform:none;vertical-align:middle">v1.1.0</small></h1><p>Turn any photo into a trading card — baseball, duel-monster or creature-battle style.</p></div>
+  <div><h1>Card Forge <small style="font:600 12px system-ui;color:var(--mute);letter-spacing:0;text-transform:none;vertical-align:middle">v1.2.0</small></h1><p>Turn any photo into a trading card — baseball, duel-monster or creature-battle style.</p></div>
 </header>
 
 <main>
@@ -227,6 +227,16 @@ input[type=color]{width:100%;height:34px;margin-top:4px;border:1px solid var(--l
         </div>
         <label class="f">Flavor text<textarea data-k="flavor"></textarea></label>
         <label class="f">Illustrator<input type="text" data-k="illus"></label>
+      </div>
+
+      <div data-t="poker">
+        <div class="row">
+          <label class="f">Rank<select data-k="rank"><option>A</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>J</option><option>Q</option><option>K</option><option value="JOKER">Joker</option></select></label>
+          <label class="f">Suit<select data-k="suit"><option value="spades">♠ Spades</option><option value="hearts">♥ Hearts</option><option value="diamonds">♦ Diamonds</option><option value="clubs">♣ Clubs</option></select></label>
+        </div>
+        <label class="f">Layout<select data-k="playout"><option value="photo">My photo in the middle</option><option value="mirror">Classic face card (photo mirrored top &amp; bottom)</option><option value="pips">Classic suit symbols (number cards)</option></select></label>
+        <label class="check"><input type="checkbox" data-k="pname"> Show name on the card</label>
+        <div class="hint">Make a full deck: save each card to My cards, then print them all on one sheet.</div>
       </div>
 
       <div data-t="minimal">
@@ -388,7 +398,8 @@ const FONTS = {
   emoji:'"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'
 };
 const SIZES = {
-  baseball:{l:'Sports card — MLB / Topps (2.5 × 3.5 in)',w:63.5,h:88.9},
+  baseball:{l:'Poker / sports card — MLB, Topps (2.5 × 3.5 in)',w:63.5,h:88.9},
+  bridge:{l:'Bridge playing card (2.25 × 3.5 in)',w:57.15,h:88.9},
   standard:{l:'Standard TCG — Pokémon, Magic (63 × 88 mm)',w:63,h:88},
   small:{l:'Japanese size — Yu-Gi-Oh! (59 × 86 mm)',w:59,h:86},
   mini:{l:'Mini (44 × 63 mm)',w:44,h:63},
@@ -399,6 +410,7 @@ const TPL = {
   baseball:{label:'Baseball',sub:'Sports-card style',size:'baseball',border:'#ffffff',accent:'#c8102e',accent2:'#0c2340',font:'impact',sw:'linear-gradient(#fff 15%,#c8102e 15% 75%,#0c2340 75%)'},
   duel:{label:'Duel Monster',sub:'Monster / spell / trap',size:'small',border:'#3b2a1c',accent:'#d3793a',accent2:'#1d1d1d',font:'serif',sw:'linear-gradient(#3b2a1c 10%,#d3793a 10% 90%,#3b2a1c 90%)'},
   creature:{label:'Creature Battle',sub:'HP, moves & types',size:'standard',border:'#cfd6de',accent:'#f08030',accent2:'#2b2b2b',font:'sans',sw:'linear-gradient(#cfd6de 10%,#f8b880 10% 90%,#cfd6de 90%)'},
+  poker:{label:'Playing Card',sub:'Poker deck: A–K & Joker',size:'baseball',border:'#ffffff',accent:'#b3122e',accent2:'#1f3a7a',font:'serif',sw:'#fff url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 30 42%22%3E%3Ctext x=%2215%22 y=%2228%22 font-size=%2220%22 text-anchor=%22middle%22 fill=%22%23b3122e%22%3E%E2%99%A5%3C/text%3E%3C/svg%3E") center/cover'},
   minimal:{label:'Photo Minimal',sub:'Full-bleed photo',size:'standard',border:'#111111',accent:'#7c5cff',accent2:'#ffffff',font:'sans',sw:'linear-gradient(135deg,#333,#7c5cff)'}
 };
 const KIND = {normal:'#d9b46c',effect:'#d3793a',ritual:'#5f86c9',fusion:'#8e5ab0',spell:'#1d9e8a',trap:'#b4478a'};
@@ -411,6 +423,7 @@ const BACKDEF = {
   baseball:{t:'© 2026 Card Forge · Card #1',x:'Born: Auckland, NZ\nBats: Right   Throws: Right\nKnown for clutch hits and a never-quit attitude. Led the team in stolen bases two seasons running.'},
   duel:{t:'CARD FORGE',x:'Duel Collection'},
   creature:{t:'CARD FORGE',x:'Trading Card Collection'},
+  poker:{t:'CARD FORGE',x:'Playing Cards'},
   minimal:{t:'Your Title',x:'Write a message, a memory, or a few stats on the back of your card.'}
 };
 
@@ -427,6 +440,7 @@ const DEFAULTS = {
   a2n:'Big Comeback', a2d:'120', a2t:'Discard 2 Energy attached to this card.',
   weak:'×2', resist:'−30', retreat:2, flavor:'Known for showing up early and leaving everything on the field.', illus:'You',
   msub:'Est. 2026',
+  rank:'A', suit:'spades', playout:'photo', pname:true,
   backTitle:BACKDEF.baseball.t, backText:BACKDEF.baseball.x,
   stats:'YEAR,TEAM,G,AVG,HR,RBI\n2023,Heroes,118,.287,14,61\n2024,Heroes,142,.301,24,88\n2025,Heroes,150,.312,31,102\nTOTAL,,410,.301,69,251',
   backStyle:'auto', backPhoto:true,
@@ -703,6 +717,63 @@ T.creature_back=(c,W,H,u)=>{
   c.fillStyle='#fff';c.textAlign='center';c.textBaseline='middle';c.lineJoin='round';const s=fit(c,S.backTitle||'',R*1.7,6*u,'900',S.font);
   c.lineWidth=s*.14;c.strokeStyle='rgba(0,0,0,.45)';c.strokeText(S.backTitle||'',cx,cy);c.fillText(S.backTitle||'',cx,cy);
   c.fillStyle='#e6f0ff';textBox(c,S.backText,6*u,cy+R+4*u,W-12*u,H-(cy+R+4*u)-5*u,2.6*u,{align:'center',wt:'700'});
+};
+
+const SUITCOL={spades:'#111',clubs:'#111',hearts:'#c8102e',diamonds:'#c8102e'};
+function suit(c,k,cx,cy,s,flip){ // s = height of symbol
+  c.save();c.translate(cx,cy);if(flip)c.rotate(Math.PI);const h=s/2;c.beginPath();
+  if(k==='hearts'){c.moveTo(0,h);c.bezierCurveTo(-h*1.25,-h*.1,-h*.75,-h*1.15,0,-h*.45);c.bezierCurveTo(h*.75,-h*1.15,h*1.25,-h*.1,0,h)}
+  else if(k==='diamonds'){c.moveTo(0,-h);c.lineTo(h*.72,0);c.lineTo(0,h);c.lineTo(-h*.72,0);c.closePath()}
+  else if(k==='spades'){c.moveTo(0,-h);c.bezierCurveTo(h*1.25,-h*.05,h*.75,h*.85,h*.05,h*.35);c.lineTo(h*.35,h);c.lineTo(-h*.35,h);c.lineTo(-h*.05,h*.35);c.bezierCurveTo(-h*.75,h*.85,-h*1.25,-h*.05,0,-h)}
+  c.fillStyle=SUITCOL[k];
+  if(k==='clubs'){const r=h*.42;[[0,-h*.45],[-h*.45,h*.12],[h*.45,h*.12],[0,-h*.05]].forEach(([x,y],i)=>{c.beginPath();c.arc(x,y,i===3?r*.55:r,0,Math.PI*2);c.fill()});
+    c.beginPath();c.moveTo(h*.1,0);c.lineTo(h*.35,h);c.lineTo(-h*.35,h);c.lineTo(-h*.1,0);c.closePath();c.fill()}
+  else c.fill();
+  c.restore();
+}
+const PIPS={'2':[[.5,0],[.5,1]],'3':[[.5,0],[.5,.5],[.5,1]],'4':[[0,0],[1,0],[0,1],[1,1]],'5':[[0,0],[1,0],[.5,.5],[0,1],[1,1]],
+ '6':[[0,0],[1,0],[0,.5],[1,.5],[0,1],[1,1]],'7':[[0,0],[1,0],[.5,.25],[0,.5],[1,.5],[0,1],[1,1]],'8':[[0,0],[1,0],[.5,.25],[0,.5],[1,.5],[.5,.75],[0,1],[1,1]],
+ '9':[[0,0],[1,0],[0,1/3],[1,1/3],[.5,.5],[0,2/3],[1,2/3],[0,1],[1,1]],'10':[[0,0],[1,0],[.5,1/6],[0,1/3],[1,1/3],[0,2/3],[1,2/3],[.5,5/6],[0,1],[1,1]]};
+T.poker_front=(c,W,H,u)=>{
+  c.fillStyle=S.border;c.fillRect(0,0,W,H);pattern(c,0,0,W,H,'#000',.06);
+  const joker=S.rank==='JOKER',col=joker?S.accent:SUITCOL[S.suit],fx=11*u,fy=9*u,fw=W-2*fx,fh=H-2*fy;
+  const corner=(flip)=>{c.save();if(flip){c.translate(W,H);c.rotate(Math.PI)}c.fillStyle=col;c.textAlign='center';c.textBaseline='alphabetic';
+    if(joker){setFont(c,3*u,'900',S.font);'JOKER'.split('').forEach((ch,i)=>c.fillText(ch,5.6*u,7*u+i*3.3*u));starPath(c,5.6*u,25*u,1.8*u);c.fill()}
+    else{const sz=S.rank==='10'?5.6*u:7*u;setFont(c,sz,'700',S.font);c.fillText(S.rank,5.8*u,10*u);suit(c,S.suit,5.8*u,14*u,4*u)}
+    c.restore()};
+  corner(false);corner(true);
+  const num=!joker&&!'AJQK'.includes(S.rank)&&PIPS[S.rank];
+  if(S.playout==='pips'&&(num||S.rank==='A')){
+    if(S.rank==='A')suit(c,S.suit,W/2,H/2,W*.34);
+    else{const x0=fx+3*u,x1=W-fx-3*u,y0=fy+4*u,y1=H-fy-4*u,ps=8.2*u;
+      PIPS[S.rank].forEach(([px,py])=>suit(c,S.suit,x0+(x1-x0)*px,y0+(y1-y0)*py,ps,py>.5))}
+  }else if(S.playout==='mirror'){
+    const hh=fh/2;drawPhoto(c,fx,fy,fw,hh);const pr={...photoRect};
+    c.save();c.translate(fx+fw/2,fy+fh);c.rotate(Math.PI);c.translate(-(fx+fw/2),-fy);drawPhoto(c,fx,fy,fw,hh);c.restore();photoRect=pr;
+    c.strokeStyle=col;c.lineWidth=.35*u;c.strokeRect(fx,fy,fw,fh);c.beginPath();c.moveTo(fx,fy+hh);c.lineTo(fx+fw,fy+hh);c.stroke();
+    if(!joker){suit(c,S.suit,fx+3.2*u,fy+3.6*u,3.6*u);suit(c,S.suit,fx+fw-3.2*u,fy+fh-3.6*u,3.6*u,true);
+      c.fillStyle=col;setFont(c,4*u,'700',S.font);c.textAlign='center';c.textBaseline='middle';c.fillText(S.rank,fx+fw-3.4*u,fy+3.8*u);
+      c.save();c.translate(fx+3.4*u,fy+fh-3.8*u);c.rotate(Math.PI);c.fillText(S.rank,0,0);c.restore()}
+    if(S.pname&&S.name){setFont(c,2.8*u,'700',S.font);const tw=Math.min(c.measureText(S.name).width+4*u,fw-4*u);rrect(c,W/2-tw/2,fy+hh-2.4*u,tw,4.8*u,2.4*u);c.fillStyle='#fff';c.fill();c.strokeStyle=col;c.lineWidth=.3*u;c.stroke();
+      c.fillStyle=col;c.textAlign='center';c.textBaseline='middle';fit(c,S.name,tw-2*u,2.8*u,'700',S.font);c.fillText(S.name,W/2,fy+hh+.2*u)}
+  }else{
+    drawPhoto(c,fx,fy,fw,fh);c.strokeStyle=col;c.lineWidth=.35*u;c.strokeRect(fx,fy,fw,fh);
+    if(S.pname&&S.name){const bh=6*u;c.fillStyle='rgba(255,255,255,.88)';c.fillRect(fx,fy+fh-bh,fw,bh);c.fillStyle=col;c.textAlign='center';c.textBaseline='middle';fit(c,S.name,fw-3*u,3.4*u,'700',S.font);c.fillText(S.name,W/2,fy+fh-bh/2+.2*u)}
+  }
+  rarity(c,W-5.6*u,5*u,2.6*u);
+};
+T.poker_back=(c,W,H,u)=>{
+  const m=3*u;
+  backBg(c,W,H,u,()=>{c.fillStyle=S.border;c.fillRect(0,0,W,H);rrect(c,m,m,W-2*m,H-2*m,2*u);c.fillStyle=S.accent2;c.fill();
+    c.save();rrect(c,m,m,W-2*m,H-2*m,2*u);c.clip();c.strokeStyle='rgba(255,255,255,.35)';c.lineWidth=.3*u;c.beginPath();
+    for(let i=-H;i<W+H;i+=3.2*u){c.moveTo(i,0);c.lineTo(i+H,H);c.moveTo(i,H);c.lineTo(i+H,0)}c.stroke();
+    c.fillStyle='rgba(255,255,255,.5)';for(let y=m;y<H;y+=3.2*u)for(let x=m+((Math.round((y-m)/(3.2*u)))%2)*1.6*u;x<W;x+=3.2*u){}c.restore();
+    c.strokeStyle='rgba(255,255,255,.85)';c.lineWidth=.4*u;rrect(c,m+2*u,m+2*u,W-2*m-4*u,H-2*m-4*u,1.4*u);c.stroke()});
+  const cx=W/2,cy=H/2,rx=W*.3,ry=H*.17;c.beginPath();c.ellipse(cx,cy,rx,ry,0,0,Math.PI*2);c.fillStyle='#fff';c.fill();c.lineWidth=.6*u;c.strokeStyle=S.accent;c.stroke();
+  c.beginPath();c.ellipse(cx,cy,rx-1.3*u,ry-1.3*u,0,0,Math.PI*2);c.lineWidth=.25*u;c.stroke();
+  ['spades','hearts','clubs','diamonds'].forEach((k,i)=>suit(c,k,cx-4.5*u+i*3*u,cy-ry+4.6*u,2.4*u));
+  c.fillStyle=S.accent;c.textAlign='center';c.textBaseline='middle';fit(c,S.backTitle||'',rx*1.6,5.2*u,'900',S.font);c.fillText(S.backTitle||'',cx,cy+.6*u);
+  c.fillStyle='#333';textBox(c,S.backText,cx-rx*.7,cy+3.8*u,rx*1.4,ry-5*u,2.2*u,{align:'center'});
 };
 
 T.minimal_front=(c,W,H,u)=>{
