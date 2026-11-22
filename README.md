@@ -16,3 +16,7 @@ A single-page web app that turns your photo into a trading card.
 Open `index.html` in a browser. No build step. The PDF export loads jsPDF from cdnjs, so it needs an internet connection.
 
 The official MLB, Pokémon and Yu-Gi-Oh! logos and card designs are not used; the styles are original designs in a similar spirit.
+
+## Versions
+- **v1.1.0**: 300 / 600 dpi export quality; photos kept at up to 2400 px
+- **v1.0.0**: first release (card styles, sizes, stickers, stat icons, My cards, A3/A4/A5 print sheets)
