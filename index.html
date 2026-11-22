@@ -120,6 +120,10 @@ input[type=color]{width:100%;height:34px;margin-top:4px;border:1px solid var(--l
     <button class="btn" id="dlPdf">🖨 Print sheet (A3 / A4 / A5)</button>
     <button class="btn" id="saveCard2">💾 Save to My cards</button>
   </div>
+  <div class="actions" style="align-items:center">
+    <span class="hint">Export quality</span>
+    <select class="dpiSel" style="width:auto;margin:0"><option value="12">300 dpi (standard)</option><option value="24">600 dpi (extra sharp)</option></select>
+  </div>
   <div class="hint">Drag the photo on the card to move it · scroll or use the slider to zoom · drop an image here to upload</div>
 </section>
 
@@ -346,6 +350,7 @@ input[type=color]{width:100%;height:34px;margin-top:4px;border:1px solid var(--l
         <label class="f">Cards per page<select id="pPer"></select></label>
         <label class="f" id="pCopiesWrap">Copies<input type="number" id="pCopies" min="1" max="500" value="9"></label>
       </div>
+      <label class="f">Print quality<select class="dpiSel"><option value="12">300 dpi — standard, smaller file</option><option value="24">600 dpi — extra-sharp text, ~3–4× bigger file</option></select></label>
       <div class="row">
         <label class="f">Gap between cards (mm)<input type="number" id="pGap" min="0" max="20" step="0.5" value="2"></label>
         <label class="f">Page margin (mm)<input type="number" id="pMargin" min="3" max="30" step="0.5" value="5"></label>
@@ -370,7 +375,8 @@ input[type=color]{width:100%;height:34px;margin-top:4px;border:1px solid var(--l
 
 <script>
 /* ---------- data ---------- */
-const PPM = 12; // pixels per mm  (≈ 305 dpi)
+const PPM = 12; // preview: pixels per mm (≈ 305 dpi)
+let EXPORT_PPM = 12; try{const d=+localStorage.getItem('cardforge.ppm');if(d===12||d===24)EXPORT_PPM=d}catch(_){}
 const FONTS = {
   impact:'Impact,"Haettenschweiler","Arial Narrow Bold","Arial Black","Noto Sans","Noto Sans CJK SC","PingFang SC","Hiragino Sans","Microsoft YaHei","Malgun Gothic","Noto Sans Arabic","Segoe UI",sans-serif',
   block:'"Arial Black","Helvetica Neue",Arial,"Noto Sans","Noto Sans CJK SC","PingFang SC","Hiragino Sans","Microsoft YaHei","Malgun Gothic","Noto Sans Arabic","Segoe UI",sans-serif',
@@ -717,8 +723,8 @@ T.minimal_back=(c,W,H,u)=>{
 };
 
 /* ---------- render ---------- */
-function renderTo(cv,which,preview){
-  const [mw,mh]=dims(),W=Math.round(mw*PPM),H=Math.round(mh*PPM);
+function renderTo(cv,which,preview,ppm=PPM){
+  const [mw,mh]=dims(),W=Math.round(mw*ppm),H=Math.round(mh*ppm);
   if(cv.width!==W)cv.width=W;if(cv.height!==H)cv.height=H;
   photoRect=null;const c=cv.getContext('2d'),u=W/63;c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,W,H);
   c.save();if(S.corner){rrect(c,0,0,W,H,3.2*u);c.clip()}
@@ -731,7 +737,7 @@ function renderTo(cv,which,preview){
 const cv=$('#cv');
 function render(){
   renderTo(cv,side,true);curW=cv.width;curH=cv.height;
-  const [mw,mh]=dims();$('#sizeinfo').textContent=`${mw} × ${mh} mm  ·  exports at ${cv.width} × ${cv.height} px (~300 dpi)`;
+  const [mw,mh]=dims();$('#sizeinfo').textContent=`${mw} × ${mh} mm  ·  exports at ${Math.round(mw*EXPORT_PPM)} × ${Math.round(mh*EXPORT_PPM)} px (${EXPORT_PPM===24?'600':'300'} dpi)`;
   $('#zv').textContent=(+S.zoom).toFixed(2)+'×';$('#lv').textContent=S.level;
   saveLater();
 }
@@ -780,7 +786,7 @@ $('#flipBtn').onclick=()=>setSide(side==='front'?'back':'front');
 function loadFile(f){
   if(!f||!f.type.startsWith('image/'))return toast('Please choose an image file');
   const rd=new FileReader();rd.onload=()=>{const im=new Image();im.onload=()=>{
-    const max=1600,sc=Math.min(1,max/Math.max(im.width,im.height));const t=document.createElement('canvas');t.width=Math.round(im.width*sc);t.height=Math.round(im.height*sc);
+    const max=2400,sc=Math.min(1,max/Math.max(im.width,im.height));const t=document.createElement('canvas');t.width=Math.round(im.width*sc);t.height=Math.round(im.height*sc);
     t.getContext('2d').drawImage(im,0,0,t.width,t.height);IMGDATA=t.toDataURL('image/jpeg',.88);const im2=new Image();im2.onload=()=>{IMG=im2;S.zoom=1;S.ox=0;S.oy=0;sync();render();saveImg();toast('Photo added — drag it on the card to position')};im2.src=IMGDATA};
     im.onerror=()=>toast('Could not read that image');im.src=rd.result};rd.readAsDataURL(f);
 }
@@ -833,7 +839,7 @@ wrap.addEventListener('pointerleave',()=>{if(tilt)box.style.transform=''});
 let DL=null;
 (async()=>{try{if(window.claude&&window.claude.use)DL=await window.claude.use('downloads')}catch(_){DL=null}})();
 function fileBase(){return (S.name||'card').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'-').toLowerCase()||'card'}
-function exportCanvas(which){const prevSide=side;const c=document.createElement('canvas');renderTo(c,which,false);side=prevSide;return c}
+function exportCanvas(which){const prevSide=side;const c=document.createElement('canvas');renderTo(c,which,false,EXPORT_PPM);side=prevSide;return c}
 function toBlob(c,type='image/png'){return new Promise(r=>c.toBlob(r,type))}
 async function offer(filename,blob,previewURLs){
   if(DL){try{await DL.save({filename,data:blob});toast('Saved!');return}catch(err){if(err&&err.code==='declined'){toast('Save cancelled');return}if(err&&err.code==='rate_limited'){toast('One moment — try again');return}}}
@@ -894,7 +900,7 @@ async function rebuild(keepPer){
   if(!items.length){info.textContent=$('#pSrc').value==='coll'?'No cards to print yet. Save cards in “My cards” and set how many copies you want of each.':'';$('#pGo').disabled=true}
   else if(!L.pages){info.textContent='A card is too big for this paper. Try a larger paper size or a smaller margin.';$('#pGo').disabled=true}
   else{const n=L.pages.length,sizes=[...new Set(items.map(i=>`${i.w} × ${i.h} mm`))];
-    info.innerHTML=`<b>${items.length} card${items.length>1?'s':''}</b> on <b>${n} ${$('#pPaper').value} page${n>1?'s':''}</b> (${L.o==='l'?'landscape':'portrait'})${$('#pBacks').checked?` + ${n} back page${n>1?'s':''}`:''}. Card size${sizes.length>1?'s':''}: ${sizes.join(', ')}. Not scaled.`;$('#pGo').disabled=false}
+    info.innerHTML=`<b>${items.length} card${items.length>1?'s':''}</b> on <b>${n} ${$('#pPaper').value} page${n>1?'s':''}</b> (${L.o==='l'?'landscape':'portrait'})${$('#pBacks').checked?` + ${n} back page${n>1?'s':''}`:''}. Card size${sizes.length>1?'s':''}: ${sizes.join(', ')}. Not scaled. ${EXPORT_PPM===24?'600':'300'} dpi.`;$('#pGo').disabled=false}
   drawPrev();
 }
 function drawPrev(){
@@ -935,6 +941,11 @@ $('#pGo').onclick=async()=>{
   await offer(`${name}-${paper}-${PR.count}-cards.pdf`,pdf.output('blob'),null);
 };
 
+function setDpi(v){EXPORT_PPM=+v===24?24:12;try{localStorage.setItem('cardforge.ppm',EXPORT_PPM)}catch(_){}
+  $$('.dpiSel').forEach(x=>x.value=EXPORT_PPM);render();
+  if($('#printModal').classList.contains('on')){PR.cache={};rebuild(true)}}
+$$('.dpiSel').forEach(x=>{x.value=EXPORT_PPM;x.addEventListener('change',e=>setDpi(e.target.value))});
+
 /* ---------- my cards (collection) ---------- */
 let COLL=[],editingId=null;
 const idb={db:null,open(){return new Promise((res,rej)=>{const r=indexedDB.open('cardforge',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(this.db=r.result);r.onerror=()=>rej(r.error)})},
@@ -942,7 +953,7 @@ const idb={db:null,open(){return new Promise((res,rej)=>{const r=indexedDB.open(
   async get(k){const db=this.db||await this.open();return new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}};
 let warned=false;
 async function persistColl(){try{await idb.set('coll',COLL)}catch(_){if(!warned){warned=true;toast('This browser won’t keep saved cards after you close the page')}}}
-function thumbOf(){const c=exportCanvas('front'),t=document.createElement('canvas'),k=200/c.height;t.width=Math.round(c.width*k);t.height=200;t.getContext('2d').drawImage(c,0,0,t.width,t.height);return t.toDataURL('image/png')}
+function thumbOf(){const c=renderTo(document.createElement('canvas'),'front',false,PPM),t=document.createElement('canvas'),k=200/c.height;t.width=Math.round(c.width*k);t.height=200;t.getContext('2d').drawImage(c,0,0,t.width,t.height);return t.toDataURL('image/png')}
 function snapshot(){return{state:JSON.parse(JSON.stringify(S)),imgData:IMGDATA,thumb:thumbOf()}}
 function esc(t){return String(t).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
 function renderColl(){

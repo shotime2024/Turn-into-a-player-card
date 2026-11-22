@@ -10,7 +10,7 @@ A single-page web app that turns your photo into a trading card.
 - **Design:** colours and team combos, fonts, holo/gold/sparkle foil, rarity marks, frame patterns, emoji and text stickers, stat icons (ATK, DEF, HP, SPD, MAG, LV)
 - **My cards:** save many different cards (kept in the browser via IndexedDB), set copies per card
 - **Print sheets:** A3 / A4 / A5 / US Letter PDF with cards at exact size (never scaled), mixed sizes on one sheet, back pages for double-sided printing, crop marks, optional 3 mm bleed
-- PNG export of front and back (~300 dpi)
+- PNG and PDF export at 300 dpi (standard) or 600 dpi (extra sharp)
 
 ## Run
 Open `index.html` in a browser. No build step. The PDF export loads jsPDF from cdnjs, so it needs an internet connection.
